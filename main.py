@@ -65,21 +65,17 @@ with app.app_context():
 
 @app.route('/')
 def get_all_posts():
-    # TODO: Query the database for all the posts. Convert the data to a python list.
     data = db.session.execute(db.select(BlogPost))
     posts = data.scalars().all()
     return render_template("index.html", all_posts=posts)
 
 
-# TODO: Add a route so that you can click on individual posts.
 @app.route('/<int:post_id>')
 def show_post(post_id):
-    # TODO: Retrieve a BlogPost from the database based on the post_id
     requested_post = db.get_or_404(BlogPost, post_id)
     return render_template("post.html", post=requested_post)
 
 
-# TODO: add_new_post() to create a new blog post
 @app.route('/new-post', methods=["GET", "POST"])
 def new_post():
     form=NewPostForm()
@@ -98,9 +94,32 @@ def new_post():
     return render_template("make-post.html", form=form)
 
 
-# TODO: edit_post() to change an existing blog post
+@app.route('/edit-post/<int:post_id>', methods=["GET", "POST"])
+def edit_post(post_id):
+    id = db.get_or_404(BlogPost, post_id)
+    form = NewPostForm(
+    title=id.title,
+    subtitle=id.subtitle,
+    img_url=id.img_url,
+    author_name=id.author,
+    body=id.body
+    )
+    if form.validate_on_submit():
+        id.title=form.title.data
+        id.subtitle = form.subtitle.data
+        id.img_url = form.img_url.data
+        id.author = form.author_name.data
+        id.body = form.body.data
+        db.session.commit()
+        return redirect(url_for("show_post", post_id=id.id))
+    return render_template("make-post.html", post_id=id, form=form)
 
-# TODO: delete_post() to remove a blog post from the database
+@app.route('/delete/<post_id>', methods=["GET", "POST"])
+def delete_post(post_id):
+    id = db.get_or_404(BlogPost, post_id)
+    db.session.delete(id)
+    db.session.commit()
+    return redirect(url_for('get_all_posts'))
 
 # Below is the code from previous lessons. No changes needed.
 @app.route("/about")
